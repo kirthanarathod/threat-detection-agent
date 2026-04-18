@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Threat Detection Agent - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>🛡️ Threat Detection Agent</h1>
+            <p>Real-time security incident analysis powered by Llama 2</p>
+        </header>
+
+        <!-- Alert Form -->
+        <section class="section">
+            <h2>📊 Analyze Security Alert</h2>
+            <form id="alertForm" class="form">
+                <div class="form-group">
+                    <label for="alertId">Alert ID *</label>
+                    <input type="text" id="alertId" placeholder="e.g., alert_001" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="source">Source *</label>
+                        <select id="source" required>
+                            <option value="">-- Select Source --</option>
+                            <option value="EDR">EDR</option>
+                            <option value="Firewall">Firewall</option>
+                            <option value="IDS">IDS</option>
+                            <option value="SIEM">SIEM</option>
+                            <option value="WAF">WAF</option>
+                            <option value="CloudWatch">CloudWatch</option>
+                            <option value="Sentinel">Sentinel</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="eventType">Event Type *</label>
+                        <select id="eventType" required>
+                            <option value="">-- Select Event Type --</option>
+                            <option value="privilege_escalation">Privilege Escalation</option>
+                            <option value="lateral_movement">Lateral Movement</option>
+                            <option value="data_exfiltration">Data Exfiltration</option>
+                            <option value="malware_detection">Malware Detection</option>
+                            <option value="suspicious_login">Suspicious Login</option>
+                            <option value="unusual_activity">Unusual Activity</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="severity">Severity (0-1) *</label>
+                        <input type="number" id="severity" min="0" max="1" step="0.01" placeholder="0.85" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description *</label>
+                    <textarea id="description" placeholder="Describe the security event..." rows="3" required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">🔍 Analyze Alert</button>
+            </form>
+        </section>
+
+        <!-- Analysis Result -->
+        <section class="section" id="resultSection" style="display: none;">
+            <h2>✅ Analysis Result</h2>
+            <div class="result-card" id="resultCard"></div>
+        </section>
+
+        <!-- Past Decisions -->
+        <section class="section">
+            <h2>📋 Past Decisions</h2>
+            <div class="filter-group">
+                <select id="threatFilter">
+                    <option value="">All Threats</option>
+                    <option value="CRITICAL">🔴 CRITICAL</option>
+                    <option value="HIGH">🟠 HIGH</option>
+                    <option value="MEDIUM">🟡 MEDIUM</option>
+                    <option value="LOW">🟢 LOW</option>
+                </select>
+                <button class="btn btn-secondary" onclick="loadDecisions()">Load Decisions</button>
+            </div>
+            <div id="decisionsList" class="decisions-list"></div>
+        </section>
+
+        <!-- Errors -->
+        <div id="errorMsg" class="error" style="display: none;"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

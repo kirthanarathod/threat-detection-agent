@@ -4,12 +4,15 @@ Main FastAPI server that receives security alerts and analyzes them using Llama 
 """
 
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import requests
 import json
 from datetime import datetime
 import logging
 import os
+from pathlib import Path
 from sqlalchemy.orm import Session
 
 # Import database models
@@ -212,7 +215,11 @@ Respond ONLY with valid JSON."""
 
 @app.get("/")
 async def root():
-    """Root endpoint - basic info"""
+    """Serve the dashboard"""
+    static_dir = Path(__file__).parent / "static"
+    index_file = static_dir / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
     return {
         "name": "Agentic AI Threat Detection & Autonomous Response System",
         "version": "1.0.0",
@@ -220,6 +227,11 @@ async def root():
         "docs": "/docs",
         "database": "sqlite://threat_detection.db"
     }
+
+# Mount static files (CSS, JS)
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/health")
 async def health_check():
