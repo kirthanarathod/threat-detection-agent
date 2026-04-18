@@ -63,6 +63,53 @@ Server will start at: **http://0.0.0.0:8000**
 
 ---
 
+## Docker Deployment (Recommended for Production)
+
+### Using Docker Compose (Easiest)
+
+```bash
+# Clone repo
+git clone https://github.com/kirthanarathod/threat-detection-agent.git
+cd threat-detection-agent
+
+# Start both Ollama and FastAPI in containers
+docker-compose up -d
+
+# Check logs
+docker-compose logs -f api
+
+# Stop services
+docker-compose down
+```
+
+**What this does:**
+- Automates Ollama setup (downloads Llama 2 inside container)
+- Runs FastAPI on `http://localhost:8000`
+- Persists database and Ollama data to volumes
+- Health checks ensure both services are ready
+- Networking between containers configured automatically
+
+### Manual Docker Build
+
+```bash
+# Build the image
+docker build -t threat-detection-agent:latest .
+
+# Run the container (requires Ollama running separately)
+docker run -p 8000:8000 \
+  -e OLLAMA_HOST=http://host.docker.internal:11434 \
+  -v $(pwd)/threat_detection.db:/app/threat_detection.db \
+  threat-detection-agent:latest
+```
+
+### System Requirements
+
+- **Docker & Docker Compose** installed
+- **8GB RAM minimum** (3.8GB for Llama 2 model + runtime)
+- **20GB disk space** (for Ollama model + OS + dependencies)
+
+---
+
 ## API Endpoints
 
 ### 1. **POST /analyze** — Analyze a Security Alert

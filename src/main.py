@@ -9,10 +9,11 @@ import requests
 import json
 from datetime import datetime
 import logging
+import os
 from sqlalchemy.orm import Session
 
 # Import database models
-from src.models import init_db, get_db, DecisionRecord
+from .models import init_db, get_db, DecisionRecord
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -25,8 +26,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Ollama configuration
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
+# Ollama configuration (supports Docker environment variables)
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_API_URL = f"{OLLAMA_HOST}/api/generate"
 MODEL_NAME = "llama2"
 
 # ============================================================================
@@ -40,6 +42,39 @@ class Alert(BaseModel):
     event_type: str  # e.g., 'privilege_escalation', 'lateral_movement'
     description: str
     severity: float  # 0.0 to 1.0
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "alert_001",
+                "source": "EDR",
+                "event_type": "malware_detection",
+                "description": "Ransomware signature detected",
+                "severity": 0.95
+            }
+        }
+    
+    def validate_input(self):
+        """Validate alert input"""
+        errors = []
+        
+        if not self.id or len(self.id.strip()) == 0:
+            errors.append("Alert ID cannot be empty")
+        
+        valid_sources = {"EDR", "Firewall", "IDS", "SIEM", "WAF", "CloudWatch", "Sentinel"}
+        if self.source not in valid_sources:
+            errors.append(f"Invalid source. Must be one of: {', '.join(valid_sources)}")
+        
+        if not self.event_type or len(self.event_type.strip()) == 0:
+            errors.append("Event type cannot be empty")
+        
+        if not self.description or len(self.description.strip()) == 0:
+            errors.append("Description cannot be empty")
+        
+        if not (0.0 <= self.severity <= 1.0):
+            errors.append("Severity must be between 0.0 and 1.0")
+        
+        return errors
     
 class Decision(BaseModel):
     """AI decision response"""
@@ -63,8 +98,12 @@ def call_llama2(prompt: str) -> str:
         
     Returns:
         LLM response text
+        
+    Raises:
+        Exception: If Ollama is unreachable or request fails
     """
     try:
+        logger.info("Calling Ollama API...")
         response = requests.post(
             OLLAMA_API_URL,
             json={
@@ -77,9 +116,41 @@ def call_llama2(prompt: str) -> str:
         )
         response.raise_for_status()
         return response.json()["response"]
+    
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f"❌ Cannot connect to Ollama at {OLLAMA_API_URL}. Is it running?")
+        raise HTTPException(
+            status_code=503,
+            detail=f"Ollama service unavailable. Make sure Ollama is running (ollama serve)"
+        )
+    
+    except requests.exceptions.Timeout:
+        logger.error("Ollama API request timed out after 120 seconds")
+        raise HTTPException(
+            status_code=504,
+            detail="Ollama API timed out. The model may be overloaded. Try again."
+        )
+    
+    except requests.exceptions.HTTPError as e:
+        logger.error(f"Ollama API error: {e.response.status_code} - {e.response.text}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Ollama API error: {e.response.status_code}"
+        )
+    
+    except KeyError:
+        logger.error("Ollama response missing 'response' field")
+        raise HTTPException(
+            status_code=502,
+            detail="Invalid response format from Ollama"
+        )
+    
     except Exception as e:
-        logger.error(f"Ollama API error: {e}")
-        raise
+        logger.error(f"Unexpected error calling Ollama: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error: {str(e)}"
+        )
 
 def analyze_alert(alert: Alert) -> dict:
     """
@@ -176,6 +247,15 @@ async def analyze_security_alert(alert: Alert, db: Session = Depends(get_db)) ->
     try:
         logger.info(f"Analyzing alert: {alert.id}")
         
+        # Validate input
+        validation_errors = alert.validate_input()
+        if validation_errors:
+            logger.warning(f"Alert validation failed: {validation_errors}")
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid alert data: {'; '.join(validation_errors)}"
+            )
+        
         # Analyze using Llama 2
         analysis = analyze_alert(alert)
         
@@ -190,27 +270,42 @@ async def analyze_security_alert(alert: Alert, db: Session = Depends(get_db)) ->
         )
         
         # Save to database
-        db_record = DecisionRecord(
-            alert_id=alert.id,
-            source=alert.source,
-            event_type=alert.event_type,
-            description=alert.description,
-            alert_severity=alert.severity,
-            threat_level=decision.threat_level,
-            recommended_action=decision.recommended_action,
-            confidence=decision.confidence,
-            reasoning=decision.reasoning
-        )
-        db.add(db_record)
-        db.commit()
-        logger.info(f"✅ Decision saved to database: {alert.id}")
+        try:
+            db_record = DecisionRecord(
+                alert_id=alert.id,
+                source=alert.source,
+                event_type=alert.event_type,
+                description=alert.description,
+                alert_severity=alert.severity,
+                threat_level=decision.threat_level,
+                recommended_action=decision.recommended_action,
+                confidence=decision.confidence,
+                reasoning=decision.reasoning
+            )
+            db.add(db_record)
+            db.commit()
+            logger.info(f"✅ Decision saved to database: {alert.id}")
+        except Exception as db_error:
+            logger.error(f"Database error: {db_error}")
+            db.rollback()
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to save decision to database: {str(db_error)}"
+            )
         
         logger.info(f"Decision for {alert.id}: {decision.recommended_action} ({decision.threat_level})")
         return decision
         
+    except HTTPException:
+        # Re-raise HTTPExceptions (validation, Ollama, DB errors)
+        raise
+    
     except Exception as e:
-        logger.error(f"Error analyzing alert: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error analyzing alert {alert.id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error: {str(e)}"
+        )
 
 @app.get("/decisions")
 async def get_decisions(threat_level: str = None, limit: int = 50, db: Session = Depends(get_db)):
@@ -222,12 +317,27 @@ async def get_decisions(threat_level: str = None, limit: int = 50, db: Session =
     - limit: max number of results (default 50)
     """
     try:
-        query = db.query(DecisionRecord).order_by(DecisionRecord.created_at.desc()).limit(limit)
+        # Validate limit
+        if limit < 1 or limit > 1000:
+            raise HTTPException(
+                status_code=400,
+                detail="Limit must be between 1 and 1000"
+            )
+        
+        # Validate threat_level if provided
+        valid_threat_levels = {"CRITICAL", "HIGH", "MEDIUM", "LOW"}
+        if threat_level and threat_level.upper() not in valid_threat_levels:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid threat level. Must be one of: {', '.join(valid_threat_levels)}"
+            )
+        
+        query = db.query(DecisionRecord).order_by(DecisionRecord.created_at.desc())
         
         if threat_level:
-            query = query.filter(DecisionRecord.threat_level == threat_level)
+            query = query.filter(DecisionRecord.threat_level == threat_level.upper())
         
-        decisions = query.all()
+        decisions = query.limit(limit).all()
         
         return {
             "count": len(decisions),
@@ -242,9 +352,14 @@ async def get_decisions(threat_level: str = None, limit: int = 50, db: Session =
                 for d in decisions
             ]
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error querying decisions: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=f"Database error: {str(e)}"
+        )
 
 # ============================================================================
 # STARTUP/SHUTDOWN

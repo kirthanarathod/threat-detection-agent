@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Ollama service - runs the Llama 2 model
+  ollama:
+    image: ollama/ollama:latest
+    container_name: threat-detection-ollama
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - threat-detection-net
+
+  # FastAPI threat detection agent
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: threat-detection-api
+    ports:
+      - "8000:8000"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - DATABASE_URL=sqlite:///./threat_detection.db
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./threat_detection.db:/app/threat_detection.db
+      - ./logs:/app/logs
+    depends_on:
+      ollama:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - threat-detection-net
+
+networks:
+  threat-detection-net:
+    driver: bridge
+
+volumes:
+  ollama_data:
+    driver: local
