@@ -7,6 +7,15 @@ const resultCard = document.getElementById('resultCard');
 const errorMsg = document.getElementById('errorMsg');
 const decisionsList = document.getElementById('decisionsList');
 const threatFilter = document.getElementById('threatFilter');
+const severityInput = document.getElementById('severity');
+const severityValue = document.getElementById('severityValue');
+
+// Update severity value display
+if (severityInput && severityValue) {
+    severityInput.addEventListener('input', (e) => {
+        severityValue.textContent = parseFloat(e.target.value).toFixed(2);
+    });
+}
 
 // Form submission
 alertForm.addEventListener('submit', async (e) => {
@@ -82,35 +91,29 @@ async function analyzeAlert() {
 }
 
 function displayResult(data) {
-    const threatLevelClass = `threat-${data.threat_level.toLowerCase()}`;
-    
+    const threatClass = `threat-${data.threat_level.toLowerCase()}`;
     resultCard.innerHTML = `
-        <div class="result-field">
-            <strong>Alert ID:</strong>
-            <span>${data.alert_id}</span>
+        <div class="result-item">
+            <div class="result-label">Alert ID</div>
+            <div class="result-value">${data.alert_id}</div>
         </div>
-        <div class="result-field">
-            <strong>Threat Level:</strong>
-            <span class="threat-level ${threatLevelClass}">${data.threat_level}</span>
+        <div class="result-item">
+            <div class="result-label">Threat Level</div>
+            <span class="threat-badge ${threatClass}">${data.threat_level}</span>
         </div>
-        <div class="result-field">
-            <strong>Recommended Action:</strong>
-            <span>${formatAction(data.recommended_action)}</span>
+        <div class="result-item">
+            <div class="result-label">Action</div>
+            <div class="result-value" style="font-size: 1.1rem;">${formatAction(data.recommended_action)}</div>
         </div>
-        <div class="result-field">
-            <strong>Confidence:</strong>
-            <span>${(data.confidence * 100).toFixed(0)}%</span>
+        <div class="result-item">
+            <div class="result-label">Confidence</div>
+            <div class="result-value">${(data.confidence * 100).toFixed(0)}%</div>
         </div>
-        <div class="result-field">
-            <strong>Reasoning:</strong>
-            <span>${data.reasoning}</span>
-        </div>
-        <div class="result-field">
-            <strong>Timestamp:</strong>
-            <span>${new Date(data.timestamp).toLocaleString()}</span>
+        <div class="result-reasoning">
+            <div class="result-reasoning-label">AI Reasoning</div>
+            <div class="result-reasoning-text">${data.reasoning}</div>
         </div>
     `;
-    
     resultSection.style.display = 'block';
     resultSection.scrollIntoView({ behavior: 'smooth' });
 }
@@ -132,6 +135,7 @@ async function loadDecisions() {
         }
 
         displayDecisions(data.decisions || []);
+        updateStats(data.decisions || []);
 
     } catch (error) {
         showError(`Error: ${error.message}`);
@@ -140,32 +144,38 @@ async function loadDecisions() {
 
 function displayDecisions(decisions) {
     if (decisions.length === 0) {
-        decisionsList.innerHTML = '<p style="color: #999; text-align: center;">No decisions found</p>';
+        decisionsList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 40px 20px;">No decisions yet</div>';
         return;
     }
 
     decisionsList.innerHTML = decisions.map(d => {
-        const threatLevelClass = `threat-${d.threat_level.toLowerCase()}`;
-        const createdAt = new Date(d.created_at).toLocaleString();
-        
+        const threatClass = `threat-${d.threat_level.toLowerCase()}`;
+        const time = new Date(d.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const confidence = (d.confidence * 100).toFixed(0);
         return `
-            <div class="decision-card">
-                <div class="decision-header">
-                    <div>
-                        <span class="decision-id">${d.alert_id}</span>
-                        <span class="threat-level ${threatLevelClass}">${d.threat_level}</span>
-                    </div>
-                    <span class="decision-timestamp">${createdAt}</span>
+            <div class="decision-item">
+                <div class="decision-id">${d.alert_id}</div>
+                <div class="decision-time">${time}</div>
+                <div class="decision-threat">
+                    <span class="threat-badge ${threatClass}">${d.threat_level}</span>
                 </div>
-                <div class="decision-action">
-                    <strong>Action:</strong> ${formatAction(d.recommended_action)}
-                </div>
+                <div class="decision-action">${formatAction(d.recommended_action)}</div>
                 <div class="decision-confidence">
-                    <strong>Confidence:</strong> ${(d.confidence * 100).toFixed(0)}%
+                    🎯 ${confidence}% Confidence
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${confidence}%"></div>
+                    </div>
                 </div>
             </div>
         `;
     }).join('');
+}
+
+function updateStats(decisions) {
+    document.getElementById('totalAlerts').textContent = decisions.length;
+    document.getElementById('criticalCount').textContent = decisions.filter(d => d.threat_level === 'CRITICAL').length;
+    document.getElementById('highCount').textContent = decisions.filter(d => d.threat_level === 'HIGH').length;
+    document.getElementById('mediumCount').textContent = decisions.filter(d => d.threat_level === 'MEDIUM').length;
 }
 
 function formatAction(action) {
@@ -174,7 +184,7 @@ function formatAction(action) {
         'block_ip': '🚫 Block IP',
         'investigate': '🔍 Investigate',
         'escalate': '⚠️ Escalate',
-        'dismiss': '✓ Dismiss',
+        'dismiss': '✅ Dismiss',
     };
     return actions[action] || action;
 }

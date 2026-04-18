@@ -3,151 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Threat Detection Agent - Dashboard</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Threat Detection Agent</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="navbar-container">
-            <div class="navbar-brand">
-                <span class="shield-icon">🛡️</span>
-                <h1>Threat Detection Agent</h1>
+    <div class="bg-animate"></div>
+    
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">🛡️ Threat Detection Agent</h1>
+                <p class="subtitle">AI-Powered Security Alert Analysis</p>
             </div>
-            <div class="navbar-status">
-                <span class="status-indicator"></span>
-                <span class="status-text">System Active</span>
+            <div class="header-status">
+                <span class="pulse"></span>
+                <span>System Online</span>
             </div>
-        </div>
-    </nav>
+        </header>
 
-    <div class="main-container">
-        <!-- Sidebar Stats -->
-        <aside class="stats-sidebar">
-            <div class="stat-card">
-                <div class="stat-label">Total Alerts</div>
-                <div class="stat-value" id="totalAlerts">0</div>
-            </div>
-            <div class="stat-card critical">
-                <div class="stat-label">Critical</div>
-                <div class="stat-value" id="criticalCount">0</div>
-            </div>
-            <div class="stat-card high">
-                <div class="stat-label">High</div>
-                <div class="stat-value" id="highCount">0</div>
-            </div>
-            <div class="stat-card medium">
-                <div class="stat-label">Medium</div>
-                <div class="stat-value" id="mediumCount">0</div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Alert Form Section -->
-            <section class="card form-section">
-                <div class="section-header">
-                    <h2>📊 Analyze Security Alert</h2>
-                    <p>Submit a new security event for AI-powered analysis</p>
+        <!-- Main Grid -->
+        <div class="dashboard-grid">
+            <!-- Left: Stats & Form -->
+            <div class="col-left">
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <span class="stat-icon">📊</span>
+                        <span class="stat-label">Total</span>
+                        <span class="stat-number" id="totalAlerts">0</span>
+                    </div>
+                    <div class="stat-box critical">
+                        <span class="stat-icon">🔴</span>
+                        <span class="stat-label">Critical</span>
+                        <span class="stat-number" id="criticalCount">0</span>
+                    </div>
+                    <div class="stat-box high">
+                        <span class="stat-icon">🟠</span>
+                        <span class="stat-label">High</span>
+                        <span class="stat-number" id="highCount">0</span>
+                    </div>
+                    <div class="stat-box medium">
+                        <span class="stat-icon">🟡</span>
+                        <span class="stat-label">Medium</span>
+                        <span class="stat-number" id="mediumCount">0</span>
+                    </div>
                 </div>
 
-                <form id="alertForm" class="modern-form">
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label for="alertId">Alert ID</label>
-                            <input type="text" id="alertId" placeholder="alert_001" required>
-                            <span class="form-hint">Unique identifier for this alert</span>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="source">Source</label>
+                <!-- Form -->
+                <div class="glass-card form-card">
+                    <h2>New Alert</h2>
+                    <form id="alertForm">
+                        <div class="form-row">
+                            <input type="text" id="alertId" placeholder="Alert ID" required>
                             <select id="source" required>
-                                <option value="">Select source...</option>
-                                <option value="EDR">🖥️ EDR (Endpoint Detection)</option>
-                                <option value="Firewall">🔥 Firewall</option>
-                                <option value="IDS">📡 IDS (Intrusion Detection)</option>
-                                <option value="SIEM">📊 SIEM</option>
-                                <option value="WAF">🌐 WAF (Web Application)</option>
-                                <option value="CloudWatch">☁️ CloudWatch</option>
-                                <option value="Sentinel">🔷 Sentinel</option>
+                                <option value="">Source</option>
+                                <option value="EDR">EDR</option>
+                                <option value="Firewall">Firewall</option>
+                                <option value="IDS">IDS</option>
+                                <option value="SIEM">SIEM</option>
+                                <option value="WAF">WAF</option>
+                                <option value="CloudWatch">CloudWatch</option>
+                                <option value="Sentinel">Sentinel</option>
                             </select>
                         </div>
-                    </div>
 
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label for="eventType">Event Type</label>
+                        <div class="form-row">
                             <select id="eventType" required>
-                                <option value="">Select event type...</option>
-                                <option value="privilege_escalation">⬆️ Privilege Escalation</option>
-                                <option value="lateral_movement">↔️ Lateral Movement</option>
-                                <option value="data_exfiltration">📤 Data Exfiltration</option>
-                                <option value="malware_detection">🦠 Malware Detection</option>
-                                <option value="suspicious_login">🔓 Suspicious Login</option>
-                                <option value="unusual_activity">⚠️ Unusual Activity</option>
+                                <option value="">Event Type</option>
+                                <option value="privilege_escalation">Privilege Escalation</option>
+                                <option value="lateral_movement">Lateral Movement</option>
+                                <option value="data_exfiltration">Data Exfiltration</option>
+                                <option value="malware_detection">Malware Detection</option>
+                                <option value="suspicious_login">Suspicious Login</option>
+                                <option value="unusual_activity">Unusual Activity</option>
                             </select>
                         </div>
 
-                        <div class="form-group">
-                            <label for="severity">Severity Level</label>
-                            <div class="severity-slider-container">
-                                <input type="range" id="severity" min="0" max="1" step="0.01" value="0.5" class="severity-slider">
-                                <span class="severity-value" id="severityValue">0.50</span>
+                        <div class="severity-box">
+                            <label>Severity</label>
+                            <div class="severity-control">
+                                <input type="range" id="severity" min="0" max="1" step="0.01" value="0.5">
+                                <span id="severityValue">0.50</span>
                             </div>
                         </div>
+
+                        <textarea id="description" placeholder="Describe the security event..." required></textarea>
+
+                        <button type="submit" class="btn-submit">Analyze</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Results & History -->
+            <div class="col-right">
+                <!-- Result -->
+                <div id="resultSection" class="glass-card result-card" style="display: none;">
+                    <h2>✅ Analysis</h2>
+                    <div id="resultCard"></div>
+                </div>
+
+                <!-- History -->
+                <div class="glass-card history-card">
+                    <div class="history-header">
+                        <h2>Recent Decisions</h2>
+                        <select id="threatFilter">
+                            <option value="">All</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
                     </div>
-
-                    <div class="form-group full-width">
-                        <label for="description">Description</label>
-                        <textarea id="description" placeholder="Describe the security event in detail..." rows="4" required></textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-lg">
-                        <span class="btn-icon">🔍</span>
-                        Analyze Alert
-                    </button>
-                </form>
-            </section>
-
-            <!-- Analysis Result Section -->
-            <section class="card result-section" id="resultSection" style="display: none;">
-                <div class="section-header">
-                    <h2>✅ Analysis Complete</h2>
+                    <div id="decisionsList" class="decisions-list"></div>
                 </div>
-                <div class="result-container" id="resultCard"></div>
-            </section>
-
-            <!-- Past Decisions Section -->
-            <section class="card decisions-section">
-                <div class="section-header">
-                    <h2>📋 Decision History</h2>
-                    <p>Recent threat analysis decisions</p>
-                </div>
-
-                <div class="filter-bar">
-                    <select id="threatFilter" class="filter-select">
-                        <option value="">📊 All Threats</option>
-                        <option value="CRITICAL">🔴 CRITICAL</option>
-                        <option value="HIGH">🟠 HIGH</option>
-                        <option value="MEDIUM">🟡 MEDIUM</option>
-                        <option value="LOW">🟢 LOW</option>
-                    </select>
-                    <button class="btn btn-secondary" onclick="loadDecisions()">Refresh</button>
-                </div>
-
-                <div id="decisionsList" class="decisions-grid"></div>
-            </section>
-        </main>
+            </div>
+        </div>
     </div>
 
-    <!-- Error Toast -->
-    <div id="errorMsg" class="toast toast-error" style="display: none;"></div>
-    
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="spinner"></div>
-    </div>
-
-    <script src="app.js"></script>
+    <div id="errorMsg" class="toast" style="display: none;"></div>
+    <script src="/static/app.js"></script>
 </body>
 </html>
