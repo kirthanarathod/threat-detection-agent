@@ -8,3 +8,10 @@ venv/
 .DS_Store
 *.log
 .pytest_cache/
+threat_detection.db
+*.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
