@@ -7,89 +7,145 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header class="header">
-            <h1>🛡️ Threat Detection Agent</h1>
-            <p>Real-time security incident analysis powered by Llama 2</p>
-        </header>
-
-        <!-- Alert Form -->
-        <section class="section">
-            <h2>📊 Analyze Security Alert</h2>
-            <form id="alertForm" class="form">
-                <div class="form-group">
-                    <label for="alertId">Alert ID *</label>
-                    <input type="text" id="alertId" placeholder="e.g., alert_001" required>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="source">Source *</label>
-                        <select id="source" required>
-                            <option value="">-- Select Source --</option>
-                            <option value="EDR">EDR</option>
-                            <option value="Firewall">Firewall</option>
-                            <option value="IDS">IDS</option>
-                            <option value="SIEM">SIEM</option>
-                            <option value="WAF">WAF</option>
-                            <option value="CloudWatch">CloudWatch</option>
-                            <option value="Sentinel">Sentinel</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="eventType">Event Type *</label>
-                        <select id="eventType" required>
-                            <option value="">-- Select Event Type --</option>
-                            <option value="privilege_escalation">Privilege Escalation</option>
-                            <option value="lateral_movement">Lateral Movement</option>
-                            <option value="data_exfiltration">Data Exfiltration</option>
-                            <option value="malware_detection">Malware Detection</option>
-                            <option value="suspicious_login">Suspicious Login</option>
-                            <option value="unusual_activity">Unusual Activity</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="severity">Severity (0-1) *</label>
-                        <input type="number" id="severity" min="0" max="1" step="0.01" placeholder="0.85" required>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="description">Description *</label>
-                    <textarea id="description" placeholder="Describe the security event..." rows="3" required></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-primary">🔍 Analyze Alert</button>
-            </form>
-        </section>
-
-        <!-- Analysis Result -->
-        <section class="section" id="resultSection" style="display: none;">
-            <h2>✅ Analysis Result</h2>
-            <div class="result-card" id="resultCard"></div>
-        </section>
-
-        <!-- Past Decisions -->
-        <section class="section">
-            <h2>📋 Past Decisions</h2>
-            <div class="filter-group">
-                <select id="threatFilter">
-                    <option value="">All Threats</option>
-                    <option value="CRITICAL">🔴 CRITICAL</option>
-                    <option value="HIGH">🟠 HIGH</option>
-                    <option value="MEDIUM">🟡 MEDIUM</option>
-                    <option value="LOW">🟢 LOW</option>
-                </select>
-                <button class="btn btn-secondary" onclick="loadDecisions()">Load Decisions</button>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="navbar-brand">
+                <span class="shield-icon">🛡️</span>
+                <h1>Threat Detection Agent</h1>
             </div>
-            <div id="decisionsList" class="decisions-list"></div>
-        </section>
+            <div class="navbar-status">
+                <span class="status-indicator"></span>
+                <span class="status-text">System Active</span>
+            </div>
+        </div>
+    </nav>
 
-        <!-- Errors -->
-        <div id="errorMsg" class="error" style="display: none;"></div>
+    <div class="main-container">
+        <!-- Sidebar Stats -->
+        <aside class="stats-sidebar">
+            <div class="stat-card">
+                <div class="stat-label">Total Alerts</div>
+                <div class="stat-value" id="totalAlerts">0</div>
+            </div>
+            <div class="stat-card critical">
+                <div class="stat-label">Critical</div>
+                <div class="stat-value" id="criticalCount">0</div>
+            </div>
+            <div class="stat-card high">
+                <div class="stat-label">High</div>
+                <div class="stat-value" id="highCount">0</div>
+            </div>
+            <div class="stat-card medium">
+                <div class="stat-label">Medium</div>
+                <div class="stat-value" id="mediumCount">0</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Alert Form Section -->
+            <section class="card form-section">
+                <div class="section-header">
+                    <h2>📊 Analyze Security Alert</h2>
+                    <p>Submit a new security event for AI-powered analysis</p>
+                </div>
+
+                <form id="alertForm" class="modern-form">
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="alertId">Alert ID</label>
+                            <input type="text" id="alertId" placeholder="alert_001" required>
+                            <span class="form-hint">Unique identifier for this alert</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="source">Source</label>
+                            <select id="source" required>
+                                <option value="">Select source...</option>
+                                <option value="EDR">🖥️ EDR (Endpoint Detection)</option>
+                                <option value="Firewall">🔥 Firewall</option>
+                                <option value="IDS">📡 IDS (Intrusion Detection)</option>
+                                <option value="SIEM">📊 SIEM</option>
+                                <option value="WAF">🌐 WAF (Web Application)</option>
+                                <option value="CloudWatch">☁️ CloudWatch</option>
+                                <option value="Sentinel">🔷 Sentinel</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-grid-2">
+                        <div class="form-group">
+                            <label for="eventType">Event Type</label>
+                            <select id="eventType" required>
+                                <option value="">Select event type...</option>
+                                <option value="privilege_escalation">⬆️ Privilege Escalation</option>
+                                <option value="lateral_movement">↔️ Lateral Movement</option>
+                                <option value="data_exfiltration">📤 Data Exfiltration</option>
+                                <option value="malware_detection">🦠 Malware Detection</option>
+                                <option value="suspicious_login">🔓 Suspicious Login</option>
+                                <option value="unusual_activity">⚠️ Unusual Activity</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="severity">Severity Level</label>
+                            <div class="severity-slider-container">
+                                <input type="range" id="severity" min="0" max="1" step="0.01" value="0.5" class="severity-slider">
+                                <span class="severity-value" id="severityValue">0.50</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="description">Description</label>
+                        <textarea id="description" placeholder="Describe the security event in detail..." rows="4" required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <span class="btn-icon">🔍</span>
+                        Analyze Alert
+                    </button>
+                </form>
+            </section>
+
+            <!-- Analysis Result Section -->
+            <section class="card result-section" id="resultSection" style="display: none;">
+                <div class="section-header">
+                    <h2>✅ Analysis Complete</h2>
+                </div>
+                <div class="result-container" id="resultCard"></div>
+            </section>
+
+            <!-- Past Decisions Section -->
+            <section class="card decisions-section">
+                <div class="section-header">
+                    <h2>📋 Decision History</h2>
+                    <p>Recent threat analysis decisions</p>
+                </div>
+
+                <div class="filter-bar">
+                    <select id="threatFilter" class="filter-select">
+                        <option value="">📊 All Threats</option>
+                        <option value="CRITICAL">🔴 CRITICAL</option>
+                        <option value="HIGH">🟠 HIGH</option>
+                        <option value="MEDIUM">🟡 MEDIUM</option>
+                        <option value="LOW">🟢 LOW</option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="loadDecisions()">Refresh</button>
+                </div>
+
+                <div id="decisionsList" class="decisions-grid"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Error Toast -->
+    <div id="errorMsg" class="toast toast-error" style="display: none;"></div>
+    
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
     </div>
 
     <script src="app.js"></script>
